@@ -1,0 +1,82 @@
+-- TASK_STATUS checks the status of the given program name by
+-- calling the KAREL GET_TSK_INFO builtin with the TSK_STATUS
+-- constant.
+--
+-- Returns a status to the provided numreg id.
+--
+-- Example:
+--   CALL TASK_STATUS('BG', 100) ;
+--
+--   Returns the status of the 'BG' program to R[100].
+--
+-- Normal return values are:
+--   -2   Run request has been accepted
+--   -1   Abort has been accepted
+--    0   Task is running
+--    1   Task is paused
+--    2   Task is aborted
+PROGRAM task_status
+CONST
+	CC_NONE   = 0
+	SEV_ABORT = 2
+	PRM_INT   = 1
+	PRM_STR   = 3
+VAR
+	status     : INTEGER
+	tsk_name   : STRING[32]
+	output_reg : INTEGER
+
+-- getParams uses GET_TPE_PRM to populate `tsk_name` from the
+-- TPE parameter 1 and `output_reg` from parameter 2
+ROUTINE getParams(status : INTEGER)
+VAR
+	int_value  : INTEGER
+	real_value : REAL
+	str_value  : STRING[1]
+BEGIN
+	GET_TPE_PRM(1, PRM_STR, int_value, real_value, tsk_name, status)
+	IF status<>0 THEN
+		RETURN
+	ENDIF
+
+	GET_TPE_PRM(2, PRM_INT, output_reg, real_value, str_value, status)
+	IF status<>0 THEN
+		RETURN
+	ENDIF
+END getParams
+
+-- getInfo uses GET_TSK_INFO with the TSK_STATUS constant
+-- to get the status of the task provided in `tsk_name`
+ROUTINE getInfo(tsk_name : STRING; status : INTEGER)
+VAR
+	tsk_no    : INTEGER
+	value_int : INTEGER
+	value_str : STRING[1]
+BEGIN
+	GET_TSK_INFO(tsk_name, tsk_no, TSK_STATUS, value_int, value_str, status)
+	IF status<>0 THEN
+		RETURN
+	ENDIF
+
+	status = value_int
+END getInfo
+
+
+BEGIN
+	-- get params from TPE
+	getParams(status)
+	IF status<>0 THEN
+		POST_ERR(status, '', CC_NONE, SEV_ABORT)
+		RETURN
+	ENDIF
+
+	-- get info about task
+	getInfo(tsk_name, status)
+
+	-- output result to output_reg
+	SET_INT_REG(output_reg, (status), status)
+	IF status<>0 THEN
+		POST_ERR(status, '', CC_NONE, SEV_ABORT)
+		RETURN
+	ENDIF
+END task_status
