@@ -16,6 +16,7 @@
 --    1   Task is paused
 --    2   Task is aborted
 PROGRAM task_status
+%NOLOCKGROUP
 CONST
 	CC_NONE   = 0
 	SEV_ABORT = 2
